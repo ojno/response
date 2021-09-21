@@ -37,6 +37,34 @@ class CommsChannelManager(models.Manager):
             logger.error(f"Failed to join comms channel {e}")
             raise
 
+        if incident.reporter is not None:
+            try:
+                logger.info(f"Inviting reporter {incident.reporter.display_name} ({incident.reporter.external_id}) " +
+                            f"to comms channel {name} ({channel_id})")
+                settings.SLACK_CLIENT.invite_user_to_channel(incident.reporter.external_id, channel_id)
+            except SlackError as e:
+                if e.slack_error == "already_in_channel":
+                    logger.info("Reporter already in channel")
+                else:
+                    logger.error(f"Failed to invite reporter to channel: {e}")
+                    raise
+        else:
+            logger.info("No reporter, not inviting")
+
+        if incident.lead is not None:
+            try:
+                logger.info(f"Inviting lead {incident.lead.display_name} ({incident.lead.external_id}) " +
+                            f"to comms channel {name} ({channel_id})")
+                settings.SLACK_CLIENT.invite_user_to_channel(incident.lead.external_id, channel_id)
+            except SlackError as e:
+                if e.slack_error == "already_in_channel":
+                    logger.info("Lead already in channel")
+                else:
+                    logger.error(f"Failed to invite lead to channel: {e}")
+                    raise
+        else:
+            logger.info("No lead, not inviting")
+
         try:
             doc_url = urljoin(
                 settings.SITE_URL,
